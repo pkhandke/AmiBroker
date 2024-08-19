@@ -1,56 +1,51 @@
-//Code Generated using AFLGPT  - www.marketcalls.in
-
 _SECTION_BEGIN("RS for VPA");
 
-// Input parameters
-i_sym = ParamStr("Index for Rel.strength", "AAPL");
+// Inputs
+i_sym = ParamStr("Index for Rel.strength", "SPY");
 len = Param("Period", 22, 10, 66, 1);
 len1 = Param("Short MA for Index", 22, 10, 32, 1);
 len2 = Param("Mid MA for Index", 60, 32, 80, 1);
 len3 = Param("Long MA for Index", 130, 80, 150, 1);
 
-// Fetch the close prices
-a = C;
+// Retrieve data
+a = Close;
+bs = Foreign(i_sym, "C"); // 'C' represents the close price
 
-bs = Foreign(i_sym, "C");
+// Calculate Relative Strength
+crs = ((a / Ref(a, -len)) / (bs / Ref(bs, -len))) - 1;
 
-// Calculate the CRS
-crs = (a / Ref(a, -len)) / (bs / Ref(bs, -len)) - 1;
+// Plot Horizontal Axis
+zeroline = 0;
 zero_color = IIf(crs >= 0, colorGreen, colorOrange);
 plot_color = IIf(crs >= 0, colorGreen, colorRed);
 fill_color = IIf(crs >= 0, ColorBlend(colorGreen, colorWhite, 0.8), ColorBlend(colorRed, colorWhite, 0.8));
 
-// Plotting
-Plot(0, "Horiz. Axis", zero_color, styleLine);
-Plot(crs, "CRS", plot_color, styleLine | styleThick);
+Plot(zeroline, "Horiz. Axis", zero_color, styleLine | styleNoTitle);
+Plot(crs, "CRS", plot_color, styleOwnScale | styleThick);
+PlotOHLC(zeroline, zeroline, crs, crs, "CRS Area", fill_color, styleCloud | styleNoLabel, Null, Null, 0, -1, -1);
 
-// Fill between CRS and horizontal axis
-PlotOHLC(0, crs, crs, 0, "", fill_color, styleCloud);
-
-// Moving Averages for the Index
+// Moving Averages of the Index
 x1 = EMA(bs, 5);
 x2 = EMA(bs, len1);
 x3 = EMA(bs, len2);
 x4 = EMA(bs, len3);
 
-// Background color logic for band
-xs = IIf(x1 - x2 > 0, 1, -1);
-xm = IIf(xs == 1 AND x2 - x3 > 0, 1, -1);
-xl = IIf(xm == 1 AND x3 - x4 > 0, 1, -1);
+xs = IIf(x1 > x2, 1, -1);
+xm = IIf(xs == 1 AND x2 > x3, 1, -1);
+xl = IIf(xm == 1 AND x3 > x4, 1, -1);
 
-band_color = IIf(xl > 0, ColorBlend(colorYellow, colorWhite, 0.4), 
-                IIf(xm > 0, ColorBlend(colorYellow, colorWhite, 0.6), 
-                IIf(xs > 0, ColorBlend(colorYellow, colorWhite, 0.8), 
-                IIf(xl < 0, ColorBlend(colorBlue, colorWhite, 0.8), 
-                IIf(xm < 0 AND xs > 0, ColorBlend(colorBlue, colorWhite, 0.6), 
-                ColorBlend(colorBlue, colorWhite, 0.4))))));
+// Background Color based on conditions
+bgcolor = IIf(xl > 0, ColorBlend(colorYellow, colorWhite, 0.6),
+             IIf(xm > 0, ColorBlend(colorYellow, colorWhite, 0.4),
+             IIf(xs > 0, ColorBlend(colorYellow, colorWhite, 0.2),
+             ColorBlend(colorBlue, colorWhite, 0.2))));
 
-// Plot the background color as a band below the main chart
-Plot(1, "Background Band", band_color, styleArea | styleOwnScale, 0, 1);
+Plot(1.6, "Trend", bgcolor, styleOwnScale|styleArea|styleNoLabel, Null, 100, 0 ); 
 
-// Additional necessary setup for AFL scripts
+
+// Plot Default Chart Elements
 SetChartOptions(0, chartShowArrows | chartShowDates);
 _N(Title = StrFormat("{{NAME}} - {{INTERVAL}} {{DATE}} Open %g, Hi %g, Lo %g, Close %g (%.1f%%) {{VALUES}}", O, H, L, C, SelectedValue(ROC(C, 1))));
-Plot(Close, "Close", ParamColor("Color", colorDefault), styleNoTitle | ParamStyle("Style") | GetPriceStyle());
+//Plot(Close, "Close", colorDefault, styleNoTitle | styleCandle);
 
 _SECTION_END();
