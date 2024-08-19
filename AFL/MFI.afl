@@ -1,0 +1,45 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © karthikmarar
+
+// Define constants
+periods = 22;
+
+// Fetch data from a different symbol (for the sake of example, using the close price of the current symbol)
+bs = Close; // Replace "Close" with the correct field if needed
+TYP = (High + Low + Close) / 3;
+RMF = TYP * Volume;
+PMF = IIf(TYP > Ref(TYP, -1), RMF, 0);
+NMF = IIf(TYP < Ref(TYP, -1), RMF, 0);
+
+// Calculate Money Flow Ratio (MFR) and Money Flow Index (RMFI)
+MFR = Sum(PMF, periods) / Sum(NMF, periods);
+RMFI = 100 - (100 / (1 + MFR));
+
+// Calculate weighted moving average of RMFI
+JM = WMA(RMFI, 22);
+
+// Define plot colors
+fill_color = IIf(RMFI > JM, colorLime, colorRed);
+
+// Plot Money Flow Index (RMFI) and its weighted moving average (JM)
+Plot(RMFI, "Money Flow", IIf(RMFI > JM, colorLime, colorRed), 2);
+Plot(JM, "Avg", colorOrange);
+
+// Plot fill color
+PlotOHLC(RMFI, RMFI, RMFI, RMFI, "Fill", fill_color, styleCloud | styleNoLabel);
+
+// Define Exponential Moving Averages
+x1 = EMA(bs, 5);
+x2 = EMA(bs, 22);
+x3 = EMA(bs, 60);
+x4 = EMA(bs, 130);
+
+// Define background color conditions
+xs = IIf(x1 - x2 > 0, 1, -1);
+xm = IIf(xs == 1 AND x2 - x3 > 0, 1, -1);
+xl = IIf(xm == 1 AND x3 - x4 > 0, 1, -1);
+
+// Set background color based on conditions
+bgcolor = IIf(xl > 0, colorYellow, IIf(xm > 0, colorYellow, IIf(xs > 0, colorYellow, IIf(xl < 0, colorBlue, IIf(xm < 0 AND xs > 0, colorBlue, colorBlue)))));
+Plot(1.0, "TrendAdv2", bgcolor, styleOwnScale|styleArea|styleNoLabel, Null, 10, 0 ); 
+
